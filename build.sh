@@ -1,0 +1,1 @@
+clang -g -O0 -Wno-pointer-sign -Ilib/ -Isrc/ src/viewer/viewer_main.c -o mw_viewer -lSDL3 -lm -lGL && echo "[compiled viewer]"
