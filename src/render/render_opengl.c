@@ -115,30 +115,39 @@ function R_Texture *r_allocTexture(void *bytes, int w, int h, b32 filtering)
 	
 	glBindTexture(GL_TEXTURE_2D, texture);
 	
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, bytes);
+	
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	
+	r_gl_setTextureFiltering(texture, filtering);
+	
+	out->ogl_id = texture;
+	
+	return out;
+}
+
+function void r_gl_setTextureFiltering(u32 ogl_id, b32 filtering)
+{
+	glBindTexture(GL_TEXTURE_2D, ogl_id);
+	
 	if (filtering)
 	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		//glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	}
-	
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, bytes);
-	
-	if (filtering)
-	{
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	
-	out->ogl_id = texture;
-	
-	return out;
+}
+
+function void r_setTextureFiltering(R_Texture *tex, b32 filtering)
+{
+	r_gl_setTextureFiltering(tex->ogl_id, filtering);
 }
 
 function void r_freeTexture(R_Texture *tex)

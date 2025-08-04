@@ -27,5 +27,6 @@ struct R_Texture
 // Implemented per backend
 function R_Texture *r_allocTexture(void *bytes, int w, int h, b32 filtering);
 function void r_freeTexture(R_Texture *tex);
+function void r_setTextureFiltering(R_Texture *tex, b32 filtering);
 
 #endif //RENDER_CORE_H

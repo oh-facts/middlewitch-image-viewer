@@ -8,5 +8,6 @@ function void r_backend_init(Arena *scratch);
 function GLuint make_shader_program(char *vertexShaderSource, char *fragmentShaderSource);
 function void checkCompileErrors(GLuint shader, const char *type);
 function void checkLinkErrors(GLuint shader, const char *type);
+function void r_gl_setTextureFiltering(u32 ogl_id, b32 filtering);
 
 #endif //RENDER_OPENGL_H

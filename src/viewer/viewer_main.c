@@ -201,6 +201,8 @@ int main(int argc, char *argv[])
 				
 				f32 window_aspect = (f32)w / h;
 				
+				bool filter_changed = false;
+				
 				SDL_Event event;
 				while (SDL_PollEvent(&event)) 
 				{
@@ -270,6 +272,11 @@ int main(int argc, char *argv[])
 									current_vf->target_zoom = 1;
 								}break;
 								
+								case SDLK_SPACE:
+								{
+									current_vf->filtering = !current_vf->filtering;
+									filter_changed = true;
+								}break;
 							}
 						}
 					}
@@ -337,6 +344,11 @@ int main(int argc, char *argv[])
 					case Viewer_FileKind_Tex:
 					{
 						R_Texture *tex = viewer_textureFromPath(current_vf->path);
+						
+						if (filter_changed)
+						{
+							r_setTextureFiltering(tex, current_vf->filtering);
+						}
 						
 						f32 smoothing = 0.1f;
 						current_vf->current_zoom += (current_vf->target_zoom - current_vf->current_zoom) * smoothing;

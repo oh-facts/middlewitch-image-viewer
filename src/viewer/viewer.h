@@ -63,6 +63,7 @@ struct Viewer_File
 	
 	f32 current_zoom;
 	f32 target_zoom;
+	b32 filtering;
 };
 
 typedef struct Viewer_FileSlot Viewer_FileSlot;
