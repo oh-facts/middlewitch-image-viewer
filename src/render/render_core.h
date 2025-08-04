@@ -19,8 +19,13 @@ struct R_Vertex
 typedef struct R_Texture R_Texture;
 struct R_Texture
 {
+	R_Texture *next;
 	u32 ogl_id;
 	V2F size;
 };
+
+// Implemented per backend
+function R_Texture *r_allocTexture(void *bytes, int w, int h, b32 filtering);
+function void r_freeTexture(R_Texture *tex);
 
 #endif //RENDER_CORE_H

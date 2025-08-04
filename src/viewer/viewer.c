@@ -8,7 +8,7 @@ function Viewer_File *viewer_fileAlloc(Arena *arena, Viewer_FileKind kind, Str8 
 	Str8 path = push_str8f(arena, "%.*s", str8_varg(path_));
 	
 	vf->path = path;
-		
+	
 	return vf;
 }
 
@@ -90,7 +90,7 @@ function void viewer_equipFileWithParent(Viewer_File *p, Viewer_File *vf)
 	vf->parent = p;
 }
 
-void dir_enumerate(Viewer_File *root, char *dirname)
+function void dir_enumerate(Viewer_File *root, char *dirname)
 {
 	DIR *dir = opendir(dirname);
 	if (!dir) return;
@@ -98,7 +98,7 @@ void dir_enumerate(Viewer_File *root, char *dirname)
 	struct dirent *entry;
 	while ((entry = readdir(dir)) != NULL) {
 		if (entry->d_name[0] == '.') continue;
-
+		
 		Viewer_File *vf = 0;
 		
 		char fullpath[1024];
@@ -122,7 +122,6 @@ void dir_enumerate(Viewer_File *root, char *dirname)
 				if (stbi_info(path.c, &x, &y, &channels))
 				{
 					vf = viewer_fileFromPath(path, Viewer_FileKind_Tex, 0);
-					vf->tex = loadTextureFromPath(path);
 				}
 			}
 		}
@@ -175,4 +174,73 @@ function void viewer_filePrint(Viewer_File *file)
 	{
 		printf("%.*s\n", str8_varg(cur->path));
 	}
+}
+
+function Viewer_Texture *viewer_textureAlloc(Arena *arena, Str8 path)
+{
+	Viewer_Texture *out = viewer->free_tex;
+	
+	if (out)
+	{
+		viewer->free_tex = viewer->free_tex->free_next;
+		*out = (Viewer_Texture){0};
+	}
+	else
+	{
+		out = pushArray(arena, Viewer_Texture, 1);
+	}
+	
+	out->v = loadTextureFromPath(path);
+	viewer->tex_memory += out->v->size.x * out->v->size.y * 4;
+	
+	return out;
+}
+
+function void viewer_textureFree(Viewer_Texture *vt)
+{
+	r_freeTexture(vt->v);
+	viewer->tex_memory -= vt->v->size.x * vt->v->size.y * 4;
+	vt->free_next = viewer->free_tex;
+	viewer->free_tex = vt;
+}
+
+function R_Texture *viewer_textureFromPath(Str8 path)
+{
+	u64 hash = hash_str8(path);
+	u64 slot_idx = hash % viewer->tex_slots_count;
+	Viewer_TextureSlot *slot = viewer->tex_slots + slot_idx;
+	
+	Viewer_Texture *out = 0;
+	
+	for (Viewer_Texture *it = slot->first; it; it = it->hash_next)
+	{
+		if (it->hash == hash)
+		{
+			out = it;
+			break;
+		}
+	}
+	
+	if (!out)
+	{
+		out = viewer_textureAlloc(viewer->perm, path);
+		
+		if (slot->last)
+		{
+			out->hash_prev = slot->last;
+			slot->last->hash_next = out;
+			slot->last = out;
+		}
+		else
+		{
+			slot->first = out;
+			slot->last = out;
+		}
+		
+		out->hash = hash;
+	}
+	
+	out->last_touched_tick = viewer->ticks;
+	
+	return out->v;
 }

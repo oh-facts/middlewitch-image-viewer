@@ -58,6 +58,8 @@ typedef int32_t b32;
 #define MB(Value) (KB(Value) * 1024)
 #define GB(Value) (MB(Value) * 1024)
 #define TB(Value) (GB(Value) * 1024)
+#define To_MB(value) (value * (1.f / 1024) * (1.f / 1024))
+#define To_KB(value) (value * (1.f / 1024))
 
 #define PI (3.1415926535897f)
 #define degToRad(deg) (deg * PI / 180.f)

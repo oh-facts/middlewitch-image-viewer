@@ -4,16 +4,16 @@ Single image views
 One, where every image is visible one after the other.
 option to change # of rows / col
 Like in a file explorer
-Even draw folders
-left, right key to go left / right
-up / down to go up down folders
+[x] Even draw folders
+[x] left, right key to go left / right
+[x] up / down to go up down folders
 
 styling
 image border
 background
 tint
 
-Add file / folder navitation first.
+[ ] Add file / folder navitation first.
 text rendering
 try freetype
 copy code over
@@ -28,7 +28,12 @@ Panels
 // use keys only
  
 // option to see clipboard / screenshots
+
+// texture streaming
+// draw file tree on the side
+// inotify
 */
+
 #include <dirent.h>
 #include <sys/stat.h>
 
@@ -95,8 +100,6 @@ Panels
 
 int main(int argc, char *argv[])
 {
-	Arena *perm = arenaAllocSized(MB(1), MB(8), 1);
-	
 	if (argc == 2)
 	{
 		int file_exists = SDL_GetPathInfo(argv[1], 0);
@@ -112,6 +115,7 @@ int main(int argc, char *argv[])
 			
 			SDL_GLContext glctx = SDL_GL_CreateContext(win);
 			
+			Arena *perm = arenaAllocSized(MB(1), MB(8), 1);
 			Arena *frame = arenaAllocSized(MB(32), MB(32), 0);
 			r_backend_init(frame);
 			
@@ -127,8 +131,10 @@ int main(int argc, char *argv[])
 			viewer->perm = perm;
 			viewer->frame = frame;
 			viewer->file_slots_count = 256;
-			viewer->file_slots = pushArray(perm, Viewer_FileSlot, 256);
-
+			viewer->file_slots = pushArray(perm, Viewer_FileSlot, viewer->file_slots_count);
+			viewer->tex_slots_count = 256;
+			viewer->tex_slots = pushArray(perm, Viewer_TextureSlot, viewer->tex_slots_count);
+			
 			Str8 app_dir = os_getAppDir(frame);
 			
 			u32 pix = 0xFFFFFFFF;
@@ -174,16 +180,18 @@ int main(int argc, char *argv[])
 				{
 					break;
 				}
-				
 			}
 			
 			for(;run;)
 			{
+				ArenaTemp temp = arenaTempBegin(frame);
+				
 				f64 time_since_last = time_elapsed;
 				
-				SDL_SetWindowTitle(win, current_vf->path.c);
+				Str8 win_title = push_str8f(frame, "%.*s | %.2f MB | %.2f MB | %.2f KB", str8_varg(current_vf->path), To_MB(viewer->tex_memory), To_MB(perm->used), To_KB(frame->used));
+				pushArray_zero(frame, u8, 1);
 				
-				ArenaTemp temp = arenaTempBegin(frame);
+				SDL_SetWindowTitle(win, win_title.c);
 				
 				f32 x, y;
 				SDL_GetMouseState(&x, &y);
@@ -192,7 +200,7 @@ int main(int argc, char *argv[])
 				SDL_GetWindowSize(win, &w, &h);
 				
 				f32 window_aspect = (f32)w / h;
-								
+				
 				SDL_Event event;
 				while (SDL_PollEvent(&event)) 
 				{
@@ -202,7 +210,7 @@ int main(int argc, char *argv[])
 					}
 					else if (event.type == SDL_EVENT_KEY_DOWN)
 					{
-	//					if (!event.key.repeat)
+						//					if (!event.key.repeat)
 						{
 							switch (event.key.key)
 							{
@@ -249,7 +257,6 @@ int main(int argc, char *argv[])
 									}
 									
 								}break;
-								
 								case SDLK_UP:
 								{
 									if (!str8_equals(current_vf->parent->path, str8_lit("/")))
@@ -257,12 +264,12 @@ int main(int argc, char *argv[])
 										current_vf = current_vf->parent;
 									}
 								}break;
-								
 								case SDLK_R:
 								{
 									current_vf->target_offset = (V2F){0};
 									current_vf->target_zoom = 1;
 								}break;
+								
 							}
 						}
 					}
@@ -287,15 +294,17 @@ int main(int argc, char *argv[])
 					else if (event.type == SDL_EVENT_MOUSE_WHEEL)
 					{
 						f32 zoom_factor = 1.1f;
+						
 						f32 prev_zoom = current_vf->target_zoom;
+						
+						f32 img_x = (x - w / 2.0f - current_vf->target_offset.x) / prev_zoom;
+						f32 img_y = (y - h / 2.0f - current_vf->target_offset.y) / prev_zoom;
+						
 						current_vf->target_zoom *= powf(zoom_factor, event.wheel.y);
 						current_vf->target_zoom = max(current_vf->target_zoom, 0.1f);
 						
-						f32 dx = x - w / 2.0f - current_vf->current_offset.x;
-						f32 dy = y - h / 2.0f - current_vf->current_offset.y;
-						f32 scale_diff = current_vf->target_zoom / prev_zoom - 1.0f;
-						current_vf->target_offset.x -= dx * scale_diff;
-						current_vf->target_offset.y -= dy * scale_diff;
+						current_vf->target_offset.x = x - w / 2.0f - img_x * current_vf->target_zoom;
+						current_vf->target_offset.y = y - h / 2.0f - img_y * current_vf->target_zoom;
 					}
 				}
 				
@@ -327,7 +336,7 @@ int main(int argc, char *argv[])
 				{
 					case Viewer_FileKind_Tex:
 					{
-						R_Texture *tex = current_vf->tex;
+						R_Texture *tex = viewer_textureFromPath(current_vf->path);
 						
 						f32 smoothing = 0.1f;
 						current_vf->current_zoom += (current_vf->target_zoom - current_vf->current_zoom) * smoothing;
@@ -387,6 +396,46 @@ int main(int argc, char *argv[])
 				}
 				r_submit(win, cmds);
 				end_render_cmds(&cmds);
+				
+				if (((viewer->ticks % 64) == 0) && (viewer->tex_memory > GB(1)))
+				{
+					for (int i = 0; i < viewer->tex_slots_count; i+=1)
+					{
+						Viewer_TextureSlot *slot = viewer->tex_slots + i;
+						for (Viewer_Texture *cur = slot->first; cur; cur = cur->hash_next)
+						{
+							if (cur->last_touched_tick + 32 < viewer->ticks)
+							{
+								printf("freed %lu\n", cur->hash);
+								
+								if (cur->hash_prev)
+								{
+									cur->hash_prev->hash_next = cur->hash_next;
+								}
+								else
+								{
+									slot->first = cur->hash_next;
+								}
+								
+								if (cur->hash_next)
+								{
+									cur->hash_next->hash_prev = cur->hash_prev;
+								}
+								else
+								{
+									slot->last = cur->hash_prev;
+								}
+								
+								viewer_textureFree(cur);
+								// free texture
+								// remove from map
+								// etc. etc.
+							}
+						}
+					}
+				}
+				
+				viewer->ticks += 1;
 				
 				arenaTempEnd(&temp);
 				

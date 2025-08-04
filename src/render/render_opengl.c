@@ -3,75 +3,7 @@ global GLuint rect_vao;
 global GLuint rect_vbo;
 global GLuint u_screen_size;
 global Arena *gl_arena;
-
-function R_Texture *r_allocTexture(void *bytes, int w, int h, b32 filtering)
-{
-	R_Texture *out = pushArray(gl_arena, R_Texture, 1);
-	out->size.x = w;
-	out->size.y = h;
-	
-	unsigned int texture;
-	glGenTextures(1, &texture);
-	
-	glBindTexture(GL_TEXTURE_2D, texture);
-	
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	
-	if (filtering)
-	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	}
-	else
-	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	}
-	
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, bytes);
-	
-	if (filtering)
-	{
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	
-	out->ogl_id = texture;
-	
-	return out;
-}
-
-function void r_submit(SDL_Window *win, Render_Cmds cmds)
-{
-	int w, h;
-	SDL_GetWindowSize(win, &w, &h);
-	
-	glViewport(0, 0, w, h);
-	glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glUseProgram(rect_shader);
-	glBindVertexArray(rect_vao);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, rect_vbo);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(R_Vertex) * cmds.current_vertices, cmds.vertices);
-	
-	glUniform2f(u_screen_size, w, h);
-	
-	int start = 0;
-	
-	for (Rect_Group *cur = cmds.first; cur; cur = cur->next)
-	{
-		glBindTexture(GL_TEXTURE_2D, cur->texture->ogl_id);
-		glDrawArrays(GL_TRIANGLES, start, cur->count);
-		start += cur->count;
-	}
-	
-	SDL_GL_SwapWindow(win);
-}
+global R_Texture *gl_free_textures;
 
 function void r_backend_init(Arena *scratch)
 {
@@ -159,4 +91,91 @@ function void checkLinkErrors(GLuint shader, const char *type)
 		glGetProgramInfoLog(shader, 1024, 0, infoLog);
 		printf("\n%s linking error:\n%s\n", type, infoLog);
 	}
+}
+
+function R_Texture *r_allocTexture(void *bytes, int w, int h, b32 filtering)
+{
+	R_Texture *out = gl_free_textures;
+	
+	if (out)
+	{
+		gl_free_textures = gl_free_textures->next;
+		*out = (R_Texture){0};
+	}
+	else
+	{
+		out = pushArray(gl_arena, R_Texture, 1);
+	}
+	
+	out->size.x = w;
+	out->size.y = h;
+	
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	
+	glBindTexture(GL_TEXTURE_2D, texture);
+	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	
+	if (filtering)
+	{
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
+	else
+	{
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	}
+	
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, bytes);
+	
+	if (filtering)
+	{
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	
+	out->ogl_id = texture;
+	
+	return out;
+}
+
+function void r_freeTexture(R_Texture *tex)
+{
+	glDeleteTextures(1, &tex->ogl_id);
+	tex->next = gl_free_textures;
+	gl_free_textures = tex;
+}
+
+function void r_submit(SDL_Window *win, Render_Cmds cmds)
+{
+	int w, h;
+	SDL_GetWindowSize(win, &w, &h);
+	
+	glViewport(0, 0, w, h);
+	glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	
+	glUseProgram(rect_shader);
+	glBindVertexArray(rect_vao);
+	
+	glBindBuffer(GL_ARRAY_BUFFER, rect_vbo);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(R_Vertex) * cmds.current_vertices, cmds.vertices);
+	
+	glUniform2f(u_screen_size, w, h);
+	
+	int start = 0;
+	
+	for (Rect_Group *cur = cmds.first; cur; cur = cur->next)
+	{
+		glBindTexture(GL_TEXTURE_2D, cur->texture->ogl_id);
+		glDrawArrays(GL_TRIANGLES, start, cur->count);
+		start += cur->count;
+	}
+	
+	SDL_GL_SwapWindow(win);
 }
