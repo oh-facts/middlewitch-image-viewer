@@ -32,10 +32,20 @@ Panels
 // texture streaming
 // draw file tree on the side
 // inotify
+
+[] glyph map
+[] text rendering
+[] ui layer
+[] stuff
+
+[] leave platform and layer set up here and app stuff inside viewer.c
+
+[] folder nav animation
 */
 
 #include <dirent.h>
 #include <sys/stat.h>
+#include <uchar.h>
 
 #include <stdint.h>
 #define STB_SPRINTF_IMPLEMENTATION
@@ -66,6 +76,9 @@ Panels
 #include <base/base_string.c>
 #include <base/base_file.c>
 
+#include <freetype/freetype.h>
+#include <glyph/glyph.h>
+
 #if defined(OS_WIN32)
 #undef function
 #define WIN32_LEAN_AND_MEAN
@@ -94,6 +107,7 @@ Panels
 #error platform not supported
 #endif
 
+#include <glyph/glyph.c>
 #include <render/render_group.c>
 #include <render/render_opengl.c>
 #include <viewer/viewer.c>
@@ -118,6 +132,7 @@ int main(int argc, char *argv[])
 			Arena *perm = arenaAllocSized(MB(1), MB(8), 1);
 			Arena *frame = arenaAllocSized(MB(32), MB(32), 0);
 			r_backend_init(frame);
+			font_state_init(frame);
 			
 			u64 start = os_getPerfCounter();
 			u64 freq = os_getPerfFreq();
@@ -406,6 +421,9 @@ int main(int argc, char *argv[])
 						assert(false && "Control shouldn't be here");
 					}break;
 				}
+				
+				push_glyphs(&cmds, win_title, (V2F){0, 64}, 32, COLOR_WHITE);
+				
 				r_submit(win, cmds);
 				end_render_cmds(&cmds);
 				

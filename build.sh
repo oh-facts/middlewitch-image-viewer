@@ -1,1 +1,1 @@
-clang -g -O0 -Wno-pointer-sign -Ilib/ -Isrc/ src/viewer/viewer_main.c -o mw_viewer -lSDL3 -lm -lGL && echo "[compiled viewer]"
+clang -g -O0 -Wno-pointer-sign -Ilib/ -Isrc/ -I/usr/include/freetype2 src/viewer/viewer_main.c -o mw_viewer -lSDL3 -lm -lGL -lfreetype && echo "[compiled viewer]"

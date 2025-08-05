@@ -157,3 +157,25 @@ function inline void push_texture_section(Render_Cmds *cmds, R_Texture *texture,
 {
 	push_cool_texture(cmds, texture, pos, size, src, COLOR_WHITE, COLOR_WHITE, COLOR_WHITE, COLOR_WHITE);
 }
+
+function void push_glyphs(Render_Cmds *cmds, Str8 text, V2F pos, int pt_size, V4F color)
+{
+	f32 x = pos.x;
+	f32 y = pos.y;
+	
+	for (int i = 0; i < text.len; i+=1)
+	{
+		Glyph *g = glyph_from_key(text.c[i], pt_size);
+		
+		if (g->tex)
+		{
+			V2F size = g->tex->size;
+			f32 pos_y = g->offset_y;
+			V2F dp = {x + g->offset_x, y - pos_y};
+			push_cool_texture(cmds, g->tex, dp, size, (RectF){(V2F){0}, g->tex->size}, color, color, color, color);
+		}
+		
+		x += g->advance_x;
+		
+	}
+}

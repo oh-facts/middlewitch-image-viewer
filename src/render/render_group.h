@@ -40,6 +40,8 @@ struct Render_Cmds
 function void push_rect(Render_Cmds *cmds, V2F pos, V2F size, V4F color);
 function void push_texture(Render_Cmds *cmds, R_Texture *texture, V2F pos, V2F size);
 function void push_texture_section(Render_Cmds *cmds, R_Texture *texture, V2F pos, V2F size, RectF src);
+function void push_glyphs(Render_Cmds *cmds, Str8 text, V2F pos, int size, V4F color);
+
 function void r_submit(SDL_Window *win, Render_Cmds cmds);
 
 #endif //RENDER_GROUP_H
