@@ -14,33 +14,36 @@ background
 tint
 
 [ ] Add file / folder navitation first.
-text rendering
-try freetype
-copy code over
+[x] text rendering
+[x] try freetype
+[x] copy code over
 
-Panels
+[ ] Panels
 
-// side bar tree
-// tab to toggle its rendering
+ [ ] side bar tree
+ [ ] tab to toggle its rendering
 
-// use hashmapfor image nav ?
-// maybe something like the one you had in your asset system
-// use keys only
+ [ ] use hashmapfor image nav ?
+ [ ] maybe something like the one you had in your asset system
+ [ ] use keys only
  
-// option to see clipboard / screenshots
+ [ ] option to see clipboard / screenshots
 
-// texture streaming
-// draw file tree on the side
-// inotify
+ [ ] texture streaming
+[ ] draw file tree on the side
+  [ ] inotify
 
-[] glyph map
-[] text rendering
-[] ui layer
-[] stuff
+[ ] glyph map
+[ ] text rendering
+[ ] ui layer
+[ ] stuff
 
-[] leave platform and layer set up here and app stuff inside viewer.c
+[ ] leave platform and layer set up here and app stuff inside viewer.c
 
-[] folder nav animation
+[ ] folder nav animation
+
+[ ] views - media roll thing
+[ ] views - all media
 */
 
 #include <dirent.h>
@@ -114,9 +117,20 @@ Panels
 
 int main(int argc, char *argv[])
 {
-	if (argc == 2)
+	if (argc < 3)
 	{
-		int file_exists = SDL_GetPathInfo(argv[1], 0);
+		char *path_arg = 0;
+		
+		if (argc == 1)
+		{
+			path_arg = "./";
+		}
+		else
+		{
+			path_arg = argv[1];
+		}
+		
+		int file_exists = SDL_GetPathInfo(path_arg, 0);
 		
 		if (file_exists)
 		{
@@ -171,7 +185,7 @@ int main(int argc, char *argv[])
 			f32 counter = 0;
 			
 			char real_path_cstr[256] = {0};
-			realpath(argv[1], real_path_cstr);
+			realpath(path_arg, real_path_cstr);
 			Str8 real_path = push_str8f(frame, "%s", real_path_cstr);
 			
 			Str8 workspace_dir = dirFromFile(perm, real_path);

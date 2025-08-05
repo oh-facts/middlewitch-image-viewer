@@ -120,4 +120,7 @@ function void viewer_filePrint(Viewer_File *file);
 function Viewer_Texture *viewer_textureAlloc(Arena *arena, Str8 path);
 function void viewer_textureFree(Viewer_Texture *vt);
 function R_Texture *viewer_textureFromPath(Str8 path);
+
+function void viewer_init();
+function void viewer_update();
 #endif //VIEWER_H
