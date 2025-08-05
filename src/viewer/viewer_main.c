@@ -334,8 +334,20 @@ int main(int argc, char *argv[])
 				
 				if (dragging)
 				{
-					current_vf->target_offset.x += x - x_l;
-					current_vf->target_offset.y += y - x_y;
+					bool ctrl_held = (SDL_GetModState() & SDL_KMOD_CTRL);
+					f32 zoom = 0;
+					
+					if (current_vf->target_zoom > 1)
+					{
+						zoom = ctrl_held ? 1.0f : current_vf->target_zoom * 0.5;
+					}
+					else
+					{
+						zoom = !ctrl_held ? 1.0f : current_vf->target_zoom * 0.5;
+					}
+					
+					current_vf->target_offset.x += (x - x_l) * zoom;
+					current_vf->target_offset.y += (y - x_y) * zoom;
 				}
 				
 				x_l = x;
@@ -351,6 +363,7 @@ int main(int argc, char *argv[])
 					src_size.y /= tile_size.y;
 					
 					push_texture_section(&cmds, uv_bg, (V2F){0}, (V2F){w, h}, (RectF){(V2F){0}, src_size});
+					push_rect(&cmds, (V2F){0}, (V2F){w, h}, (V4F){0, 0, 0, 0.5});
 				}
 				
 				// draw main tex
@@ -409,6 +422,9 @@ int main(int argc, char *argv[])
 							size.y = size.x / img_aspect_ratio;
 						}
 						
+						size.x *= 0.5;
+						size.y *= 0.5;
+						
 						V2F pos = {w / 2 - size.x / 2, h / 2 - size.y / 2};
 						
 						push_texture(&cmds, folder_icon, pos, size);
@@ -422,7 +438,107 @@ int main(int argc, char *argv[])
 					}break;
 				}
 				
-				push_glyphs(&cmds, win_title, (V2F){0, 64}, 32, COLOR_WHITE);
+				// media roll thing
+				{
+					Viewer_File *vf = current_vf;
+					
+					V2F align = {0};
+					V2F fixed_size = {128, 96};
+					
+					for (int i = 0; i < 64; i += 1)
+					{
+						f32 tint = 0.3;
+						f32 text_start = 0;
+						
+						// draw thumbnail
+						{
+							R_Texture *tex = 0;
+							
+							if (vf->kind == Viewer_FileKind_Tex)
+							{
+								tex = viewer_textureFromPath(vf->path);
+							}
+							else
+							{
+								tex = folder_icon;
+							}
+							
+							f32 tex_w = tex->size.x;
+							f32 tex_h = tex->size.y;
+							
+							f32 aspect = tex_w / tex_h;
+							
+							V2F size = {0};
+							
+							size.y = fixed_size.y;
+							size.x = fixed_size.y * aspect;
+							
+							V2F pos = {0};
+							pos.x = align.x;
+							text_start = vf->thumbnail_current_offset.x;
+							
+							V2F final_size = size;
+							
+							if (vf == current_vf)
+							{
+								V2F thumbnail_pos = vf->thumbnail_current_offset;
+								thumbnail_pos.x -= 2;
+								thumbnail_pos.y -= 2;
+								
+								push_rect(&cmds, thumbnail_pos, size, COLOR_RED);
+								
+								tint = 0.6;
+								pos.x += 2;
+								pos.y += 2;
+								final_size.x -= 4;
+								final_size.y -= 4;
+							}
+							
+							vf->thumbnail_target_offset = pos;
+							vf->thumbnail_current_offset.x += (vf->thumbnail_target_offset.x - vf->thumbnail_current_offset.x) * 0.1;
+							
+							push_tinted_texture(&cmds, tex, vf->thumbnail_current_offset, final_size, (V4F){tint, tint, tint, 1});
+							
+							align.x += size.x;
+						}
+						
+						// draw name
+						{
+							int index = 0;
+							
+							for (int i = 0; i < vf->path.len; i+= 1)
+							{
+								char c = vf->path.c[vf->path.len - i - 1];
+								
+								if (c == '/')
+								{
+									index = i;
+									break;
+								}
+								
+							}
+							
+							Str8 name = str8(vf->path.c + (vf->path.len - index), index);
+							push_glyphs(&cmds, name, (V2F){text_start, fixed_size.y + 16}, 10, (V4F){tint, tint, tint, 1});
+						}
+						
+						if (!vf->next)
+						{
+							vf = vf->parent->first;
+						}
+						else
+						{
+							vf = vf->next;
+						}
+						
+						// stop drawing if you've looped over fully
+						if (vf == current_vf)
+						{
+							break;
+						}
+						
+					}
+				}
 				
 				r_submit(win, cmds);
 				end_render_cmds(&cmds);

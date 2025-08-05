@@ -43,6 +43,8 @@ struct Viewer_File
 	Viewer_File *prev;
 	Viewer_File *parent;
 	
+	int children_count;
+	
 	// hash links
 	Viewer_File *hash_next;
 	Viewer_File *hash_prev;
@@ -64,6 +66,10 @@ struct Viewer_File
 	f32 current_zoom;
 	f32 target_zoom;
 	b32 filtering;
+	
+	// thumbnail data
+	V2F thumbnail_current_offset;
+	V2F thumbnail_target_offset;
 };
 
 typedef struct Viewer_FileSlot Viewer_FileSlot;

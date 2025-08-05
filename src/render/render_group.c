@@ -153,6 +153,11 @@ function inline void push_texture(Render_Cmds *cmds, R_Texture *texture, V2F pos
 	push_cool_texture(cmds, texture, pos, size, (RectF){(V2F){0}, texture->size}, COLOR_WHITE, COLOR_WHITE, COLOR_WHITE, COLOR_WHITE);
 }
 
+function inline void push_tinted_texture(Render_Cmds *cmds, R_Texture *texture, V2F pos, V2F size, V4F color)
+{
+	push_cool_texture(cmds, texture, pos, size, (RectF){(V2F){0}, texture->size}, color, color, color, color);
+}
+
 function inline void push_texture_section(Render_Cmds *cmds, R_Texture *texture, V2F pos, V2F size, RectF src)
 {
 	push_cool_texture(cmds, texture, pos, size, src, COLOR_WHITE, COLOR_WHITE, COLOR_WHITE, COLOR_WHITE);

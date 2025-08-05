@@ -2,8 +2,10 @@ function Viewer_File *viewer_fileAlloc(Arena *arena, Viewer_FileKind kind, Str8 
 {
 	Viewer_File *vf = pushArray(arena, Viewer_File, 1);
 	vf->kind = kind;
-	vf->current_zoom = 1.f;
-	vf->target_zoom = 1.f;
+	vf->current_zoom = 0.5f;
+	vf->target_zoom = 0.5f;
+	vf->target_offset.y += 64;
+	vf->current_offset.y += 64;
 	
 	Str8 path = push_str8f(arena, "%.*s", str8_varg(path_));
 	
@@ -88,6 +90,7 @@ function void viewer_equipFileWithParent(Viewer_File *p, Viewer_File *vf)
 		p->last = vf;
 	}
 	vf->parent = p;
+	p->children_count += 1;
 }
 
 function void dir_enumerate(Viewer_File *root, char *dirname)
