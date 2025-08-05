@@ -70,6 +70,9 @@ struct Viewer_File
 	// thumbnail data
 	V2F thumbnail_current_offset;
 	V2F thumbnail_target_offset;
+	
+	// 
+	u64 last_drawn_tick;
 };
 
 typedef struct Viewer_FileSlot Viewer_FileSlot;
@@ -101,9 +104,12 @@ struct Viewer
 
 global Viewer *viewer;
 
-function Viewer_File *viewer_fileAlloc(Arena *arena, Viewer_FileKind kind, Str8 path_);
 // djb2
 function unsigned long hash_str8(Str8 str);
+function V2F textureSizeFromWidth(R_Texture *tex, f32 width);
+
+function Viewer_File *viewer_fileAlloc(Arena *arena, Viewer_FileKind kind, Str8 path_);
+
 function Viewer_File *viewer_fileFromPath(Str8 path, Viewer_FileKind kind, bool fill_children_if_dir);
 function void viewer_equipFileWithParent(Viewer_File *p, Viewer_File *vf);
 function void dir_enumerate(Viewer_File *root, char *dirname);

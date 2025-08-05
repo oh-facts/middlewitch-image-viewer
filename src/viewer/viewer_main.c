@@ -442,8 +442,21 @@ int main(int argc, char *argv[])
 				{
 					Viewer_File *vf = current_vf;
 					
-					V2F align = {0};
+					for (int i = 0; i < 8; i+= 1)
+					{
+						//if (vf->prev) vf = vf->prev;
+						//else vf = vf->parent->last;
+					}
+					
+					Viewer_File *loop_mark_vf = vf;
+					
 					V2F fixed_size = {128, 96};
+					
+					V2F size = {0};
+					
+					V2F align = {0};
+					
+					V2F total_width = {0};
 					
 					for (int i = 0; i < 64; i += 1)
 					{
@@ -463,15 +476,9 @@ int main(int argc, char *argv[])
 								tex = folder_icon;
 							}
 							
-							f32 tex_w = tex->size.x;
-							f32 tex_h = tex->size.y;
+							V2F size = textureSizeFromWidth(tex, fixed_size.y);
 							
-							f32 aspect = tex_w / tex_h;
-							
-							V2F size = {0};
-							
-							size.y = fixed_size.y;
-							size.x = fixed_size.y * aspect;
+							total_width.x += size.x;
 							
 							V2F pos = {0};
 							pos.x = align.x;
@@ -495,10 +502,18 @@ int main(int argc, char *argv[])
 							}
 							
 							vf->thumbnail_target_offset = pos;
-							vf->thumbnail_current_offset.x += (vf->thumbnail_target_offset.x - vf->thumbnail_current_offset.x) * 0.1;
+							
+							if (vf->last_drawn_tick == (viewer->ticks - 1))
+							{
+								vf->thumbnail_current_offset.x += (vf->thumbnail_target_offset.x - vf->thumbnail_current_offset.x) * 0.1;
+							}
+							else
+							{
+								vf->thumbnail_current_offset = vf->thumbnail_target_offset;
+							}
 							
 							push_tinted_texture(&cmds, tex, vf->thumbnail_current_offset, final_size, (V4F){tint, tint, tint, 1});
-							
+							vf->last_drawn_tick = viewer->ticks;
 							align.x += size.x;
 						}
 						
@@ -532,9 +547,14 @@ int main(int argc, char *argv[])
 						}
 						
 						// stop drawing if you've looped over fully
-						if (vf == current_vf)
+						if (vf == loop_mark_vf)
 						{
 							break;
+						}
+						
+						if (total_width.x > w)
+						{
+							//break;
 						}
 						
 					}

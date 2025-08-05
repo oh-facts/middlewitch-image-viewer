@@ -1,18 +1,3 @@
-function Viewer_File *viewer_fileAlloc(Arena *arena, Viewer_FileKind kind, Str8 path_)
-{
-	Viewer_File *vf = pushArray(arena, Viewer_File, 1);
-	vf->kind = kind;
-	vf->current_zoom = 0.5f;
-	vf->target_zoom = 0.5f;
-	vf->target_offset.y += 64;
-	vf->current_offset.y += 64;
-	
-	Str8 path = push_str8f(arena, "%.*s", str8_varg(path_));
-	
-	vf->path = path;
-	
-	return vf;
-}
 
 // djb2
 function unsigned long hash_str8(Str8 str)
@@ -27,6 +12,37 @@ function unsigned long hash_str8(Str8 str)
 	}
 	
 	return hash;
+}
+
+function V2F textureSizeFromWidth(R_Texture *tex, f32 width)
+{
+	f32 tex_w = tex->size.x;
+	f32 tex_h = tex->size.y;
+	
+	f32 aspect = tex_w / tex_h;
+	
+	V2F size = {0};
+	
+	size.y = width;
+	size.x = width * aspect;
+	
+	return size;
+}
+
+function Viewer_File *viewer_fileAlloc(Arena *arena, Viewer_FileKind kind, Str8 path_)
+{
+	Viewer_File *vf = pushArray(arena, Viewer_File, 1);
+	vf->kind = kind;
+	vf->current_zoom = 0.5f;
+	vf->target_zoom = 0.5f;
+	vf->target_offset.y += 64;
+	vf->current_offset.y += 64;
+	
+	Str8 path = push_str8f(arena, "%.*s", str8_varg(path_));
+	
+	vf->path = path;
+	
+	return vf;
 }
 
 function Viewer_File *viewer_fileFromPath(Str8 path, Viewer_FileKind kind, bool fill_children_if_dir)
