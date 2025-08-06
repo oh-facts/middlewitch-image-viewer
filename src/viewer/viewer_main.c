@@ -454,26 +454,18 @@ int main(int argc, char *argv[])
 				
 				// media roll thing
 				{
-					Viewer_File *vf = current_vf;
-					
-					for (int i = 0; i < 8; i+= 1)
-					{
-						//if (vf->prev) vf = vf->prev;
-						//else vf = vf->parent->last;
-					}
-					
-					Viewer_File *loop_mark_vf = vf;
+					Viewer_FilePtrArray file_ptr_array = viewer_fileMediaRollAlloc(frame, current_vf, 7);
 					
 					V2F fixed_size = {128, 96};
-					
-					V2F size = {0};
 					
 					V2F align = {0};
 					
 					V2F total_width = {0};
 					
-					for (int i = 0; i < 64; i += 1)
+					for (int i = 0; i < file_ptr_array.count; i += 1)
 					{
+						Viewer_File *vf = file_ptr_array.data[i];
+						
 						f32 tint = 0.3;
 						f32 text_start = 0;
 						
@@ -549,21 +541,6 @@ int main(int argc, char *argv[])
 							
 							Str8 name = str8(vf->path.c + (vf->path.len - index), index);
 							push_glyphs(&cmds, name, (V2F){text_start, fixed_size.y + 16}, 10, (V4F){tint, tint, tint, 1});
-						}
-						
-						if (!vf->next)
-						{
-							vf = vf->parent->first;
-						}
-						else
-						{
-							vf = vf->next;
-						}
-						
-						// stop drawing if you've looped over fully
-						if (vf == loop_mark_vf)
-						{
-							break;
 						}
 						
 						if (total_width.x > w)

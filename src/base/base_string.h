@@ -14,6 +14,7 @@ struct Str8
 #define str8_lit(c) (Str8){(u8*)c, sizeof(c) - 1}
 
 function u64 cstr8Len(char *c);
+function Str8 str8(u8 *c, u64 len);
 function Str8 str8_cpy(Arena *arena, Str8 src);
 function void str8_memcpy(Str8 *dst, Str8 src);
 function Str8 push_str8fv(Arena *arena, char *fmt, va_list args);
