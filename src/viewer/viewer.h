@@ -74,54 +74,22 @@ struct Viewer_File
 	u64 last_drawn_tick;
 };
 
+typedef struct Viewer_Thumbnail Viewer_Thumbnail;
+struct Viewer_Thumbnail
+{
+	R_Texture *texture;
+	V2F calc_size;
+};
+
 typedef struct Viewer_FilePtrArray Viewer_FilePtrArray;
 struct Viewer_FilePtrArray
 {
 	Viewer_File **data;
+	
 	int count;
-	int offset_width;
+	int total_width;
 };
 
-function Viewer_FilePtrArray viewer_fileMediaRollAlloc(Arena *arena, Viewer_File *vf, int count)
-{
-	Viewer_FilePtrArray out = {0};
-	out.data = pushArray(arena, Viewer_File*, count);
-	out.count = count;
-	int mid = count / 2;
-	
-	//out.data[mid] = vf;
-	
-	int total_width = 0;
-	
-	{
-		Viewer_File *cur = vf;
-		for (int i = mid; i < count; i += 1)
-		{
-			//printf("%d\n\r", i);
-			out.data[i] = cur;
-			
-			if (cur->next) cur = cur->next;
-			else cur = cur->parent->first;
-		}
-	}
-	
-	//printf("\n\r");
-	
-	{
-		Viewer_File *cur = vf;
-		for (int i = mid; i >= 0; i -= 1)
-		{
-			//printf("%d\n\r", i);
-			out.data[i] = cur;
-			if (cur->prev) cur = cur->prev;
-			else cur = cur->parent->last;
-		}
-	}
-	
-	//exit(1);
-	
-	return out;
-}
 
 typedef struct Viewer_FileSlot Viewer_FileSlot;
 struct Viewer_FileSlot
@@ -169,6 +137,9 @@ function Viewer_Texture *viewer_textureAlloc(Arena *arena, Str8 path);
 function void viewer_textureFree(Viewer_Texture *vt);
 function R_Texture *viewer_textureFromPath(Str8 path);
 
+function Viewer_FilePtrArray viewer_fileMediaRollAlloc(Arena *arena, Viewer_File *vf, int count, R_Texture *folder_icon);
+
 function void viewer_init();
 function void viewer_update();
+
 #endif //VIEWER_H

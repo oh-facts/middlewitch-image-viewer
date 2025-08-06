@@ -263,3 +263,88 @@ function R_Texture *viewer_textureFromPath(Str8 path)
 	
 	return out->v;
 }
+
+// there is no way to do this neatly
+// and the end result would still be shite
+// much better idea
+// left right moves the arrow
+// pressing page end or home shifts the page
+// that can be interpolated nicely
+// also middle alignment looks nice
+
+function Viewer_FilePtrArray viewer_fileMediaRollAlloc(Arena *arena, Viewer_File *vf, int count, R_Texture *folder_icon)
+{
+	Viewer_FilePtrArray out = {0};
+	out.data = pushArray(arena, Viewer_File*, count);
+	count = min(count, vf->parent->children_count);
+	
+	out.count = count;
+	int mid = count / 2;
+	
+	//out.data[mid] = vf;
+	
+	int total_width = 0;
+	
+	{
+		Viewer_File *cur = vf;
+		for (int i = mid; i < count; i += 1)
+		{
+			//printf("%d\n\r", i);
+			out.data[i] = cur;
+			
+			R_Texture *tex = 0;
+			
+			if (cur->kind == Viewer_FileKind_Tex)
+			{
+				tex = viewer_textureFromPath(cur->path);
+			}
+			else
+			{
+				tex = folder_icon;
+			}
+			
+			V2F size = textureSizeFromWidth(tex, 96);
+			
+			if (i != mid) total_width += size.x;
+			
+			if (cur->next) cur = cur->next;
+			else cur = cur->parent->first;
+		}
+	}
+	
+	//printf("\n\r");
+	
+	{
+		Viewer_File *cur = vf;
+		for (int i = mid; i >= 0; i -= 1)
+		{
+			//printf("%d\n\r", i);
+			out.data[i] = cur;
+			
+			
+			R_Texture *tex = 0;
+			
+			if (cur->kind == Viewer_FileKind_Tex)
+			{
+				tex = viewer_textureFromPath(cur->path);
+			}
+			else
+			{
+				tex = folder_icon;
+			}
+			
+			V2F size = textureSizeFromWidth(tex, 96);
+			
+			total_width += size.x;
+			
+			if (cur->prev) cur = cur->prev;
+			else cur = cur->parent->last;
+		}
+	}
+	
+	out.total_width = total_width;
+	
+	//exit(1);
+	
+	return out;
+}

@@ -454,11 +454,13 @@ int main(int argc, char *argv[])
 				
 				// media roll thing
 				{
-					Viewer_FilePtrArray file_ptr_array = viewer_fileMediaRollAlloc(frame, current_vf, 7);
+					Viewer_FilePtrArray file_ptr_array = viewer_fileMediaRollAlloc(frame, current_vf, 64, folder_icon);
 					
-					V2F fixed_size = {128, 96};
+					f32 thumbnail_width = 96;
 					
 					V2F align = {0};
+					align.x += (- file_ptr_array.total_width + w) / 2;
+					//align.x += file_ptr_array.total_width / 2;
 					
 					V2F total_width = {0};
 					
@@ -482,7 +484,7 @@ int main(int argc, char *argv[])
 								tex = folder_icon;
 							}
 							
-							V2F size = textureSizeFromWidth(tex, fixed_size.y);
+							V2F size = textureSizeFromWidth(tex, thumbnail_width);
 							
 							total_width.x += size.x;
 							
@@ -540,7 +542,7 @@ int main(int argc, char *argv[])
 							}
 							
 							Str8 name = str8(vf->path.c + (vf->path.len - index), index);
-							push_glyphs(&cmds, name, (V2F){text_start, fixed_size.y + 16}, 10, (V4F){tint, tint, tint, 1});
+							push_glyphs(&cmds, name, (V2F){text_start, thumbnail_width + 16}, 10, (V4F){tint, tint, tint, 1});
 						}
 						
 						if (total_width.x > w)
